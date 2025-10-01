@@ -66,7 +66,7 @@ class GroqClient:
         user_prompt: str,
         system_prompt: Optional[str] = None,
         temperature: float = 0.7,
-        max_tokens: int = 120,
+        max_tokens: int = 500,
         conversation_history: Optional[List[Dict[str, str]]] = None
     ) -> Generator[str, None, None]:
         """Stream a response (yields chunks)."""
@@ -122,7 +122,7 @@ class GroqClient:
         query: str,
         context: str,
         temperature: float = 0.7,
-        max_tokens: int = 150,
+        max_tokens: int = 500,
         stream: bool = False,
         conversation_history: Optional[List[Dict[str, str]]] = None
     ) -> str:
