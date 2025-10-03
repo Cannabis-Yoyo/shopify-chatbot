@@ -27,17 +27,40 @@ class Chatbot:
         }
         self.kb.load_pdf_folder(pdf_folder, pdf_mapping)
 
-    def _extract_order_id(self, text: str) -> Optional[str]:
-        patterns = [
-            r'order\s*#?(\d+)',   # "order #1234" or "order 1234"
-            r'#(\d+)',            # "#1234"
-            r'\b(\d{4,})\b'       # Any 4+ digit number
+    def _is_order_action_request(self, text: str) -> bool:
+        """
+        Detect if user wants to PERFORM an order action (not just ask about policies).
+        Returns True only for actual order lookup/tracking/refund requests.
+        """
+        text_lower = text.lower()
+        
+        # Action phrases that indicate wanting to DO something with an order
+        action_phrases = [
+            "track my order",
+            "where is my order",
+            "check my order",
+            "order status",
+            "my order #",
+            "order number",
+            "process refund",
+            "get refund",
+            "request refund",
+            "cancel my order",
+            "cancel order",
+            "view my order",
+            "look up order",
+            "find my order"
         ]
-        for pattern in patterns:
-            match = re.search(pattern, text, re.IGNORECASE)
-            if match:
-                return match.group(1)
-        return None
+        
+        # Check if any action phrase is present
+        if any(phrase in text_lower for phrase in action_phrases):
+            return True
+        
+        # Check if they mentioned a specific order ID (indicates they want to check it)
+        if re.search(r'order\s*#?\d+', text_lower) or re.search(r'#\d{4,}', text_lower):
+            return True
+        
+        return False
 
     def chat(self, user_input: str) -> str:
         # Input validation
@@ -51,22 +74,17 @@ class Chatbot:
         # Add user message to context
         self.context.add_message("user", user_input)
         
-        user_input_lower = user_input.lower()
-        
-        # Check for order-related queries - redirect to Order Management tool
-        if any(keyword in user_input_lower for keyword in ["order", "track", "status", "refund", "cancel"]):
-            # Check if they're asking about order details/tracking/refund
-            order_keywords = ["track", "status", "where is my", "refund", "cancel", "return"]
-            if any(kw in user_input_lower for kw in order_keywords):
-                response = (
-                    "For order tracking, status checks, and refund requests, "
-                    "please use the **Order Management** tool available in the main menu. "
-                    "It will help you view your order details and process refunds efficiently."
-                )
-                self.context.add_message("assistant", response)
-                return response
+        # Check if this is an order ACTION request (not just a policy question)
+        if self._is_order_action_request(user_input):
+            response = (
+                "For order tracking, status checks, and refund requests, "
+                "please use the **Order Management** tool available in the main menu. "
+                "It will help you view your order details and process refunds efficiently."
+            )
+            self.context.add_message("assistant", response)
+            return response
 
-        # Search knowledge base
+        # Search knowledge base (for policy questions, terms, etc.)
         results = self.kb.search(user_input)
         if results:
             context_kb = "\n".join([chunk.content for chunk, _ in results])
