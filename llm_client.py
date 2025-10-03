@@ -12,11 +12,15 @@ class GroqClient:
         self.base_url = "https://api.groq.com/openai/v1/chat/completions"
         self.session = requests.Session()
 
-        # Concise system identity
+        # Enhanced system identity with clear boundaries
         self.default_system_prompt = (
-            "You are Shopify's support AI. Be helpful, brief, and friendly. "
-            "Answer questions about Shopify services, orders, returns, and policies. "
-            "For off-topic questions (like weather), politely redirect to Shopify topics."
+            "You are Shopify's expert support AI assistant. Your role:\n"
+            "- Provide detailed, accurate answers about Shopify services, policies, features, and general e-commerce topics\n"
+            "- Use the knowledge base context when provided, but also supplement with your general Shopify knowledge\n"
+            "- Give complete, helpful answers - don't just refer users to official documentation\n"
+            "- For order tracking, refunds, or order status questions, politely redirect: 'For order-specific actions like tracking or refunds, please use our Order Management tool available in the main menu.'\n"
+            "- For completely off-topic questions (weather, sports, etc.), politely redirect to Shopify topics\n"
+            "- Be conversational, friendly, and thorough in your responses"
         )
 
     def _post_request(self, messages, temperature: float, max_tokens: int, stream: bool):
@@ -126,7 +130,7 @@ class GroqClient:
         stream: bool = False,
         conversation_history: Optional[List[Dict[str, str]]] = None
     ) -> str:
-        """Generate a response using RAG context. Always returns a complete string.
+        """Generate a response using RAG context with enhanced instructions.
         
         Args:
             query: User's question
@@ -139,18 +143,21 @@ class GroqClient:
         Returns:
             Complete response string (never a generator)
         """
-        prompt = f"""You are Shopify's support AI. Answer concisely and helpfully.
+        prompt = f"""You are Shopify's expert support AI. Answer the user's question thoroughly and accurately.
 
-Context from knowledge base:
+Knowledge Base Context:
 {context}
 
-User: {query}
+User Question: {query}
 
 Instructions:
-- Use the context above to answer accurately
-- Keep responses brief (2-3 sentences max unless detail needed)
-- For off-topic questions, politely redirect: "I'm here to help with Shopify-related questions. How can I assist you with your store or order?"
-- Be friendly but efficient
+- Use the context above as your primary source, but supplement with your general Shopify knowledge
+- Provide complete, detailed answers - explain policies, features, and processes clearly
+- DO NOT just refer users to "official documentation" or "Shopify's website" - give them the actual answer
+- If the question is about order tracking, order status, or processing refunds, respond: "For order-specific actions like tracking details or processing refunds, please use our Order Management tool available in the main menu. I'm here to answer general questions about Shopify policies and services!"
+- For off-topic questions (weather, sports, etc.), politely redirect: "I'm here to help with Shopify-related questions. How can I assist you with your store, policies, or services?"
+- Be friendly, conversational, and helpful
+- Provide actionable information when possible
 
 Answer:"""
 
