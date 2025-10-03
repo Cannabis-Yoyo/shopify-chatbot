@@ -53,15 +53,16 @@ class Chatbot:
         
         user_input_lower = user_input.lower()
         
-        # Check for order-related queries
-        if any(keyword in user_input_lower for keyword in ["order", "track", "status"]):
-            order_id = self._extract_order_id(user_input)
-            if order_id:
-                response = self.orders.format_order_response(order_id)
-                self.context.add_message("assistant", response)
-                return response
-            else:
-                response = "Please provide your order ID to track it (e.g., 'order #1234')."
+        # Check for order-related queries - redirect to Order Management tool
+        if any(keyword in user_input_lower for keyword in ["order", "track", "status", "refund", "cancel"]):
+            # Check if they're asking about order details/tracking/refund
+            order_keywords = ["track", "status", "where is my", "refund", "cancel", "return"]
+            if any(kw in user_input_lower for kw in order_keywords):
+                response = (
+                    "For order tracking, status checks, and refund requests, "
+                    "please use the **Order Management** tool available in the main menu. "
+                    "It will help you view your order details and process refunds efficiently."
+                )
                 self.context.add_message("assistant", response)
                 return response
 
