@@ -1,10 +1,10 @@
 import os
 from typing import List, Optional
-
 import numpy as np
 from sentence_transformers import SentenceTransformer
 import faiss
 import PyPDF2
+import torch  # ✅ added
 
 class DocumentChunk:
     def __init__(self, content: str, metadata: dict, embedding: Optional[np.ndarray] = None):
@@ -14,7 +14,11 @@ class DocumentChunk:
 
 class RAGKnowledgeBase:
     def __init__(self, model_name: str = "all-MiniLM-L6-v2"):
-        self.embedding_model = SentenceTransformer(model_name)
+        # ✅ Force model to load on CPU (fixes NotImplementedError on Streamlit Cloud)
+        device = "cuda" if torch.cuda.is_available() else "cpu"
+        print(f"Loading embedding model on device: {device}")
+        self.embedding_model = SentenceTransformer(model_name, device=device)
+
         self.chunks = []
         self.index = None
         self.chunk_size = 500
@@ -32,7 +36,7 @@ class RAGKnowledgeBase:
             print(f"Error reading PDF {pdf_path}: {e}")
             return ""
 
-    def chunk_document(self, text: str, source: str) -> List[DocumentChunk]:
+    def chunk_document(self, text: str, source: str) -> List['DocumentChunk']:
         words = text.split()
         chunks = []
         for i in range(0, len(words), self.chunk_size - self.overlap):
